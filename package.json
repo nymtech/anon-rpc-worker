@@ -1,11 +1,11 @@
 {
   "name": "@nymproject/anon-rpc-worker",
   "version": "0.1.0",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "type": "module",
   "packageManager": "pnpm@11.1.2",
   "description": "anon-rpc conforming worker (SPEC §3.2) that anonymises fetch/RPC over the Nym mixnet via @nymproject/mix-fetch.",
-  "files": ["dist"],
+  "files": ["dist", "LICENSE", "NOTICE"],
   "publishConfig": { "access": "public" },
   "scripts": {
     "build": "node build.mjs",

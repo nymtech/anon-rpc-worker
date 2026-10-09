@@ -1,0 +1,9 @@
+anon-rpc-worker
+Copyright 2026 Nym Technologies SA
+
+Licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes software derived from anon-rpc
+(https://github.com/ethereum/anon-rpc), licensed under the MIT License,
+Copyright (c) Ethereum Foundation. Specifically, src/spec-types.ts is a copy
+of the anon-rpc SPEC worker type surface (§7 to §13).

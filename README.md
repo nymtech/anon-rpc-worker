@@ -1,7 +1,5 @@
 # anon-rpc-worker
 
-[![ci](https://github.com/nymtech/anon-rpc-worker/actions/workflows/ci.yml/badge.svg)](https://github.com/nymtech/anon-rpc-worker/actions/workflows/ci.yml)
-
 An [anon-rpc](https://github.com/ethereum/anon-rpc) conforming worker (anon-client, SPEC §3.2) that fulfils `fetch` and RPC calls over the **Nym mixnet**, built on [`@nymproject/mix-fetch`](https://www.npmjs.com/package/@nymproject/mix-fetch).
 
 A wallet runs this worker's hash-pinned bundle inside an anon-rpc harness (for example `@anon-rpc/browser-harness`). Each `worker.fetch()` travels through the mixnet and leaves it at a Nym IP Packet Router (IPR), so the RPC endpoint sees the IPR's address, not the user's, and no single gateway links a user to what they request.
@@ -92,7 +90,7 @@ Optional, read once at boot. The harness-supplied `anonRpcWorker.config` object 
 - **Abort is not cancel.** Aborting fails the call at the worker, but the in-flight mixnet transfer completes inside the WASM stack.
 - **Large bundle.** The WASM is inlined, so the file is large; hash verification and boot are one-time per session.
 - **No KPS transport yet.** Anonymity rides the mixnet over a WebSocket to a gateway, which the spec permits.
-- **Not yet confirmed working on Safari.** 
+- **Not yet confirmed working on Safari.**
 
 ## Licence
 
