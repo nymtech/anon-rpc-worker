@@ -92,8 +92,9 @@ Optional, read once at boot. The harness-supplied `anonRpcWorker.config` object 
 - **Abort is not cancel.** Aborting fails the call at the worker, but the in-flight mixnet transfer completes inside the WASM stack.
 - **Large bundle.** The WASM is inlined, so the file is large; hash verification and boot are one-time per session.
 - **No KPS transport yet.** Anonymity rides the mixnet over a WebSocket to a gateway, which the spec permits.
-- **Chromium verified.** Safari and WebKit are not yet confirmed.
+- **Not yet confirmed working on Safari.** 
 
 ## Licence
 
-MIT.
+Apache-2.0
+
