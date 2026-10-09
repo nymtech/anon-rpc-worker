@@ -78,6 +78,24 @@ Optional, read once at boot. The harness-supplied `anonRpcWorker.config` object 
 | `build.mjs` | esbuild to `dist/nym-anon-rpc-worker.js` (one IIFE, the §4 artifact); prints its keccak256 |
 | `test/` | Unit tests against fakes, a bundle smoke test, and the live-mixnet e2e under `test/e2e/` |
 
+## Upgrading and the keccak branch
+
+The worker is distributed by content hash, not by version tag. A `WorkerSpecifier` contract pins the bundle's keccak256 and lists resolver URLs; a harness fetches from any resolver and runs the bytes only if their keccak256 matches the pin. One resolver we control is the repo's own `keccak` branch: an orphan branch holding just the bundle, served from `raw.githubusercontent.com/nymtech/anon-rpc-worker/keccak/` at a path built from the bundle's hash:
+
+```
+keccak/f1/3a448a8721b9d0b20da3d5b80ffe00bf4c5bb3aae812a38d3d1e3bc81fceb8
+       │  └── the rest of the keccak256, as the filename
+       └── first byte of the hash, a shard directory
+```
+
+To publish or upgrade the bytes:
+
+1. Build the new bundle (`pnpm build`) and note the printed `workerHash`.
+2. `node push-keccak.mjs` adds the bundle to the `keccak` branch at its hash path and pushes it. It uses git plumbing, so it never checks the branch out or touches `main`, and the large binary stays off `main`.
+3. Point the specifier at it with `setWorker(workerHash, resolvers)`, where `resolvers` includes the new raw URL.
+
+The path is the hash, so each new build lands at a new path and older versions stay fetchable, and the bytes at any path can never change. Host the bytes (step 2) before the on-chain `setWorker` (step 3), or a harness reading the new pin will fail to fetch until they are live. See [`docs/keccak-branch.md`](docs/keccak-branch.md) for the full mechanics.
+
 ## Docs
 
 - [`docs/architecture.md`](docs/architecture.md): what it is, the layers, the request lifecycle, the sandbox mechanics, and the anonymity model.
