@@ -1,0 +1,24 @@
+schema: spec-driven
+
+context: |
+  anon-rpc-worker: an anon-rpc conforming worker (SPEC §3.2) that fulfils fetch
+  and RPC over the Nym mixnet, built on @nymproject/mix-fetch v2 (the smolmix
+  WASM stack). It is a pure downstream consumer of published mix-fetch; it
+  compiles no transport and reproduces its pinned keccak256 from the lockfile
+  alone.
+
+  Stack: TypeScript, built to a single esbuild IIFE (the SPEC §4 artifact);
+  Node for the build and deploy scripts; pnpm with a frozen lockfile.
+
+  The authoritative protocol is the anon-rpc SPEC (the sibling anon-rpc repo,
+  SPEC.md). These specs cover only the capabilities this repo owns: the worker's
+  runtime behaviour, and the deployment and resolver model. Where a requirement
+  restates the SPEC, it cites the section (for example "§4.2").
+
+  Conventions: British English; no em-dashes; MUST/SHALL per RFC 2119; no
+  hard-wrapping (one paragraph per line, soft-wrap in the editor).
+
+rules:
+  proposal:
+    - State the censorship or trust property a change affects, where relevant.
+    - Cite the anon-rpc SPEC section when a requirement derives from it.
