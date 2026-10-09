@@ -13,14 +13,15 @@
 //
 // Run: npm run test:e2e            (or: node test/e2e/run-e2e.mjs)
 // Env: RPC_URL to override the target endpoint;
-//      READY_TIMEOUT_MS (default 180000) for slow mixnet days.
+//      READY_TIMEOUT_MS (default 180000) for slow mixnet days;
+//      E2E_BROWSER (chromium default; firefox or webkit to check those).
 
 import { spawn } from "node:child_process";
 import { appendFileSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { keccak_256 } from "@noble/hashes/sha3.js";
-import { chromium } from "playwright";
+import { chromium, firefox, webkit } from "playwright";
 import { build as esbuild } from "esbuild";
 import { assessTopology } from "./topology.mjs";
 
@@ -30,6 +31,12 @@ const ROOT = new URL("../..", import.meta.url).pathname;
 const RPC_URL = process.env.RPC_URL ?? "https://ethereum-rpc.publicnode.com";
 const READY_TIMEOUT_MS = Number(process.env.READY_TIMEOUT_MS ?? 180_000);
 const WORKER_ADDR = "0xabc0000000000000000000000000000000000001";
+
+// Browser engine to drive. Chromium by default; set E2E_BROWSER to firefox or
+// webkit to check those too. Playwright's webkit on Linux approximates Safari,
+// it is not Safari itself.
+const ENGINES = { chromium, firefox, webkit };
+const E2E_BROWSER = process.env.E2E_BROWSER ?? "chromium";
 
 const cleanups = [];
 const cleanup = () => cleanups.splice(0).reverse().forEach((fn) => { try { fn(); } catch {} });
@@ -102,7 +109,7 @@ async function main() {
       break;
     }
     if (i >= 3) {
-      console.log(`\n⏭ SKIPPED: ${t.reason} (live-network condition, not a code failure)`);
+      console.log(`\nSKIPPED: ${t.reason} (live-network condition, not a code failure)`);
       cleanup();
       process.exit(0);
     }
@@ -154,9 +161,13 @@ async function main() {
     },
   };
 
-  // 4. drive chromium
-  const browser = await chromium.launch({ args: ["--no-sandbox"] });
+  // 4. drive the selected browser
+  const engine = ENGINES[E2E_BROWSER];
+  if (!engine) fail(`unknown E2E_BROWSER "${E2E_BROWSER}" (use chromium, firefox, or webkit)`);
+  // --no-sandbox is a chromium-only flag; firefox and webkit reject unknown args.
+  const browser = await engine.launch(E2E_BROWSER === "chromium" ? { args: ["--no-sandbox"] } : {});
   cleanups.push(() => browser.close());
+  console.log(`browser: ${E2E_BROWSER}`);
   const page = await browser.newPage();
   // full console history goes to a file too, as terminal scrollback truncates
   const logFile = `${HERE}.last-run.log`;

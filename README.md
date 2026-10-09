@@ -96,6 +96,8 @@ To publish or upgrade the bytes:
 
 The path is the hash, so each new build lands at a new path and older versions stay fetchable, and the bytes at any path can never change. Host the bytes (step 2) before the on-chain `setWorker` (step 3), or a harness reading the new pin will fail to fetch until they are live. See [`docs/keccak-branch.md`](docs/keccak-branch.md) for the full mechanics.
 
+The other two resolvers (jsdelivr and unpkg) are the npm package: run the `publish-npm` workflow from the Actions tab to publish a release. It defaults to a dry run.
+
 ## Docs
 
 - [`docs/architecture.md`](docs/architecture.md): what it is, the layers, the request lifecycle, the sandbox mechanics, and the anonymity model.

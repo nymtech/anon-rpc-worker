@@ -1,0 +1,105 @@
+name: publish-npm
+
+# Manual publish of @nymproject/anon-rpc-worker to the npm registry, which fans
+# the bundle out to the jsdelivr and unpkg resolvers. Anyone with repo write
+# access can run it from the Actions tab; the publish rights come from the
+# NODE_AUTH_TOKEN secret (an org-level @nymproject token), not from whoever
+# triggers it. It defaults to a dry run, so a real publish is a deliberate choice.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Rehearse only (pnpm publish --dry-run, nothing uploaded). Untick to publish for real."
+        type: boolean
+        default: true
+      expected_hash:
+        description: "Optional keccak256 workerHash (0x...) you intend to ship. If set, the build must reproduce it or the run fails."
+        type: string
+        default: ""
+      dist_tag:
+        description: "npm dist-tag to publish under."
+        type: string
+        default: latest
+      run_e2e:
+        description: "Also run the live-mixnet e2e before publishing. Off by default: it needs a headless browser and the live mixnet"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write # for npm provenance on a real publish
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6.0.9
+        with:
+          version: 11.1.2
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: "https://registry.npmjs.org"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Build and capture the workerHash
+        id: build
+        run: |
+          out=$(pnpm build)
+          printf '%s\n' "$out"
+          hash=$(printf '%s\n' "$out" | grep -oiE '0x[0-9a-f]{64}' | head -1)
+          echo "hash=$hash" >> "$GITHUB_OUTPUT"
+
+      - name: Assert the bundle embedded the WASM
+        run: |
+          f=dist/nym-anon-rpc-worker.js
+          test -f "$f"
+          # mix-fetch inlines its WASM as raw bytes; verify a module is actually
+          # present by its binary magic ("\0asm") rather than guessing from the size.
+          grep -aqP '\x00asm' "$f" || { echo "::error::no WASM module found in the bundle"; exit 1; }
+          echo "bundle $(du -h "$f" | cut -f1), workerHash ${{ steps.build.outputs.hash }}"
+
+      - name: Verify the built hash matches the expected one
+        if: ${{ inputs.expected_hash != '' }}
+        run: |
+          got="${{ steps.build.outputs.hash }}"
+          want="${{ inputs.expected_hash }}"
+          test "$got" = "$want" || { echo "::error::built hash $got does not match expected $want"; exit 1; }
+
+      - name: Unit tests
+        run: pnpm test
+
+      - name: End-to-end test (live mixnet, chromium + firefox + webkit)
+        if: ${{ inputs.run_e2e }}
+        timeout-minutes: 45
+        run: |
+          pnpm exec playwright install --with-deps chromium firefox webkit
+          for b in chromium firefox webkit; do
+            echo "::group::e2e on $b"
+            E2E_BROWSER="$b" pnpm test:e2e
+            echo "::endgroup::"
+          done
+
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN }}
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            echo "Dry run: packing only, nothing is uploaded."
+            pnpm publish --dry-run --no-git-checks --tag "${{ inputs.dist_tag }}"
+          else
+            # --provenance records a signed link from the package to this run and
+            # commit; it needs the id-token permission above and a public repo.
+            pnpm publish --no-git-checks --provenance --tag "${{ inputs.dist_tag }}"
+          fi
