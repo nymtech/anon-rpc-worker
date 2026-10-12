@@ -52,5 +52,14 @@ await build({
 });
 
 const bytes = await readFile(outfile);
-console.log(`workerHash (keccak256): 0x${toHex(keccak_256(bytes))}`);
+const workerHash = `0x${toHex(keccak_256(bytes))}`;
+console.log(`workerHash (keccak256): ${workerHash}`);
 console.log(`bundle size: ${(bytes.length / 1024 / 1024).toFixed(2)} MiB`);
+
+// Optional reproducibility gate: set EXPECTED_HASH to fail the build unless it
+// reproduces that hash. Used by CI, and handy for verifying a pinned release.
+const expected = process.env.EXPECTED_HASH?.trim().toLowerCase();
+if (expected && workerHash !== expected) {
+  console.error(`EXPECTED_HASH mismatch: built ${workerHash}, expected ${expected}`);
+  process.exit(1);
+}

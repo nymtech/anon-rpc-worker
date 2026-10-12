@@ -53,33 +53,10 @@ jobs:
       - name: Typecheck
         run: pnpm run typecheck
 
-      - name: Build and capture the workerHash
-        id: build
-        run: |
-          out=$(pnpm build)
-          printf '%s\n' "$out"
-          hash=$(printf '%s\n' "$out" | grep -oiE '0x[0-9a-f]{64}' | head -1)
-          echo "hash=$hash" >> "$GITHUB_OUTPUT"
-
-      - name: Sanity-check the build output
-        run: |
-          f=dist/nym-anon-rpc-worker.js
-          # The WASM is embedded inside an encoded, runtime-decoded payload, so
-          # there is no reliable way to grep for it; the keccak hash is the real
-          # gate (see the expected_hash input and the next step). Here we only
-          # confirm the build produced a non-empty bundle.
-          test -s "$f" || { echo "::error::build produced no bundle at $f"; exit 1; }
-          echo "bundle $(du -h "$f" | cut -f1), workerHash ${{ steps.build.outputs.hash }}"
-          if [ -z "${{ inputs.expected_hash }}" ]; then
-            echo "::warning::no expected_hash supplied; the build hash was not checked against an intended value"
-          fi
-
-      - name: Verify the built hash matches the expected one
-        if: ${{ inputs.expected_hash != '' }}
-        run: |
-          got="${{ steps.build.outputs.hash }}"
-          want="${{ inputs.expected_hash }}"
-          test "$got" = "$want" || { echo "::error::built hash $got does not match expected $want"; exit 1; }
+      - name: Build (prints the workerHash, fails if it is not the expected one)
+        run: pnpm build
+        env:
+          EXPECTED_HASH: ${{ inputs.expected_hash }}
 
       - name: Unit tests
         run: pnpm test
