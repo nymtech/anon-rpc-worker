@@ -61,14 +61,18 @@ jobs:
           hash=$(printf '%s\n' "$out" | grep -oiE '0x[0-9a-f]{64}' | head -1)
           echo "hash=$hash" >> "$GITHUB_OUTPUT"
 
-      - name: Assert the bundle embedded the WASM
+      - name: Sanity-check the build output
         run: |
           f=dist/nym-anon-rpc-worker.js
-          test -f "$f"
-          # mix-fetch inlines its WASM as raw bytes; verify a module is actually
-          # present by its binary magic ("\0asm") rather than guessing from the size.
-          grep -aqP '\x00asm' "$f" || { echo "::error::no WASM module found in the bundle"; exit 1; }
+          # The WASM is embedded inside an encoded, runtime-decoded payload, so
+          # there is no reliable way to grep for it; the keccak hash is the real
+          # gate (see the expected_hash input and the next step). Here we only
+          # confirm the build produced a non-empty bundle.
+          test -s "$f" || { echo "::error::build produced no bundle at $f"; exit 1; }
           echo "bundle $(du -h "$f" | cut -f1), workerHash ${{ steps.build.outputs.hash }}"
+          if [ -z "${{ inputs.expected_hash }}" ]; then
+            echo "::warning::no expected_hash supplied; the build hash was not checked against an intended value"
+          fi
 
       - name: Verify the built hash matches the expected one
         if: ${{ inputs.expected_hash != '' }}
