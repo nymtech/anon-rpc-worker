@@ -2,7 +2,7 @@ schema: spec-driven
 
 context: |
   anon-rpc-worker: an anon-rpc conforming worker (SPEC §3.2) that fulfils fetch
-  and RPC over the Nym mixnet, built on @nymproject/mix-fetch v2 (the smolmix
+  and RPC over the Nym mixnet, built on @nymproject/mix-fetch 3.0.0 (the smolmix
   WASM stack). It is a pure downstream consumer of published mix-fetch; it
   compiles no transport and reproduces its pinned keccak256 from the lockfile
   alone.

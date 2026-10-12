@@ -2,7 +2,7 @@
 
 ## Why
 
-We want a fully working anon-rpc worker deployment before the mix-fetch resilience PR (7151) lands, so that the mainnet release is a byte swap, not a first attempt. Phase 1 proved the pieces in isolation (reproducible build, on-chain deploy on anvil, mixnet round-trip in the e2e, the KPS verify tool). It did not prove them together against a real public chain and a real remote resolver: the anvil deploy used a placeholder resolver with verification skipped, and the e2e used a mock specifier. A Sepolia rehearsal exercises the whole chain end to end with the current 2.1.1 bytes, so that when mix-fetch publishes we rebuild, swap the bytes, and run the identical flow on mainnet.
+We wanted a fully working anon-rpc worker deployment ahead of the mix-fetch 3.0.0 release, so that the mainnet release is a byte swap, not a first attempt. Phase 1 proved the pieces in isolation (reproducible build, on-chain deploy on anvil, mixnet round-trip in the e2e, the KPS verify tool). It did not prove them together against a real public chain and a real remote resolver: the anvil deploy used a placeholder resolver with verification skipped, and the e2e used a mock specifier. A Sepolia rehearsal exercises the whole chain end to end with the rehearsal 2.1.1 bytes, so the mainnet release only swaps in the production bytes. mix-fetch has since shipped as 3.0.0 and the production bundle is built.
 
 It also closes the testing gaps still open: the `--github` keccak-branch resolver has never pushed real bytes, `publish-worker`'s pre-gas resolver verify loop has never run (anvil skipped it), the specifier has never been read from a real public chain, and the KPS resolver and `verify-kps` have never run against a live server.
 
@@ -14,7 +14,7 @@ It also closes the testing gaps still open: the `--github` keccak-branch resolve
 - **Rehearse the upgrade path** (`setWorker` to new bytes, and optionally `transferOwnership`), so the mainnet byte swap is a known action.
 - **Record the mainnet delta**: the only differences from this rehearsal are the new bytes, a mainnet RPC, real gas, the real owner key, and production resolvers.
 
-Non-goals: mainnet deployment; the new mix-fetch bytes (blocked on PR 7151); publishing to the `@nymproject` npm scope (that is a production resolver step).
+Non-goals: mainnet deployment; the new mix-fetch bytes; publishing to the `@nymproject` npm scope (that is a production resolver step).
 
 ## Capabilities
 
