@@ -1,21 +1,25 @@
-// End-to-end test against a REAL on-chain specifier on a public testnet
-// (Sepolia). Unlike run-e2e.mjs, which injects a mock specifier and serves the
-// bundle from a local http server, this reads a deployed WorkerSpecifier over a
-// real RPC and lets the harness fetch the bundle from the on-chain resolver, so
-// the full SPEC §4 path runs against real infrastructure. It is the dress
-// rehearsal for the mainnet release: only the bytes, chain, gas, owner key, and
-// resolver set change for mainnet.
+// End-to-end test against a REAL on-chain WorkerSpecifier, on any chain
+// (testnet or mainnet). Unlike run-e2e.mjs, which injects a mock specifier and
+// serves the bundle from a local http server, this reads a deployed specifier
+// over a real RPC and lets the harness fetch the bundle from the on-chain
+// resolver, so the full SPEC §4 path runs against real infrastructure. Point
+// SPECIFIER_RPC_URL at Sepolia to rehearse, or at mainnet for the production
+// check; only the address, chain, and resolver set differ.
 //
-// The specifier read (eth_call) is proxied through the local http server to the
-// testnet RPC, server-side, so the page does not depend on the testnet RPC
+// Two chains are independent here: SPECIFIER_RPC_URL is the chain the specifier
+// lives on; RPC_URL/EXPECT_CHAIN_ID is the chain the worker calls through the
+// mixnet. They need not match.
+//
+// The specifier read (eth_call) is proxied through the local http server to
+// SPECIFIER_RPC_URL, server-side, so the page does not depend on that RPC
 // sending CORS headers. The bundle fetch from the resolver stays a real
 // cross-origin browser fetch, which also proves the resolver sends the CORS
 // headers a production harness needs.
 //
-// Run: npm run test:sepolia
+// Run: npm run test:onchain
 // Env (required):
-//   SPECIFIER_ADDRESS   the deployed WorkerSpecifier on the testnet
-//   SPECIFIER_RPC_URL   a testnet (Sepolia) JSON-RPC endpoint
+//   SPECIFIER_ADDRESS   the deployed WorkerSpecifier
+//   SPECIFIER_RPC_URL   a JSON-RPC endpoint for the chain the specifier is on
 // Env (optional):
 //   RPC_URL             the endpoint the worker calls through the mixnet
 //                       (default a public mainnet RPC)
@@ -60,16 +64,16 @@ const enc = new TextEncoder();
 const toHex = (b) => [...b].map((x) => x.toString(16).padStart(2, "0")).join("");
 const selector = (sig) => "0x" + toHex(keccak_256(enc.encode(sig))).slice(0, 8);
 
-// Forward one JSON-RPC call to the testnet RPC, server-side (no browser CORS).
-async function testnetRpc(method, params) {
+// Forward one JSON-RPC call to the specifier-chain RPC, server-side (no CORS).
+async function specifierRpc(method, params) {
   const r = await fetch(SPECIFIER_RPC_URL, {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }),
   });
-  if (!r.ok) throw new Error(`testnet RPC HTTP ${r.status}`);
+  if (!r.ok) throw new Error(`specifier RPC HTTP ${r.status}`);
   const j = await r.json();
-  if (j.error) throw new Error(`testnet RPC error: ${JSON.stringify(j.error)}`);
+  if (j.error) throw new Error(`specifier RPC error: ${JSON.stringify(j.error)}`);
   return j.result;
 }
 
@@ -91,8 +95,8 @@ function decodeStringArray(hex) {
 }
 
 async function main() {
-  if (!SPECIFIER_ADDRESS) fail("SPECIFIER_ADDRESS is required (the deployed testnet specifier)");
-  if (!SPECIFIER_RPC_URL) fail("SPECIFIER_RPC_URL is required (a testnet JSON-RPC endpoint)");
+  if (!SPECIFIER_ADDRESS) fail("SPECIFIER_ADDRESS is required (the deployed WorkerSpecifier)");
+  if (!SPECIFIER_RPC_URL) fail("SPECIFIER_RPC_URL is required (a JSON-RPC endpoint for the specifier's chain)");
 
   // 0. gate on live directory health, as run-e2e.mjs does: a thin topology or a
   // fresh epoch rollover fails for network reasons, not code reasons.
@@ -116,9 +120,9 @@ async function main() {
     await new Promise((r) => setTimeout(r, 60_000));
   }
 
-  // 1. read the real specifier off the testnet, server-side. This both proves
+  // 1. read the real specifier off its chain, server-side. This both proves
   // the specifier exists on this chain and shows what it pins.
-  const onchainHash = await testnetRpc("eth_call", [
+  const onchainHash = await specifierRpc("eth_call", [
     { to: SPECIFIER_ADDRESS, data: selector("workerHash()") },
     "latest",
   ]);
@@ -127,7 +131,7 @@ async function main() {
   }
   let resolvers = [];
   try {
-    const resolversRet = await testnetRpc("eth_call", [
+    const resolversRet = await specifierRpc("eth_call", [
       { to: SPECIFIER_ADDRESS, data: selector("workerResolvers()") },
       "latest",
     ]);
@@ -153,8 +157,8 @@ async function main() {
   const pageHtml = await readFile(`${HERE}page.html`);
 
   // 3. local http server: the page, the harness bundle, and an eth_call proxy
-  // to the testnet RPC. The worker bundle is NOT served here; the harness
-  // fetches it from the on-chain resolver, as a real wallet would.
+  // to the specifier-chain RPC. The worker bundle is NOT served here; the
+  // harness fetches it from the on-chain resolver, as a real wallet would.
   const server = createServer((req, res) => {
     const url = req.url.split("?")[0];
     if (req.method === "POST" && url === "/rpc") {
@@ -198,7 +202,7 @@ async function main() {
   cleanups.push(() => browser.close());
   const page = await browser.newPage();
   const logFile = `${HERE}.last-run.log`;
-  writeFileSync(logFile, `# sepolia e2e ${new Date().toISOString()}\n`);
+  writeFileSync(logFile, `# onchain e2e ${new Date().toISOString()}\n`);
   const logLine = (line) => {
     console.log(`  ${line}`);
     appendFileSync(logFile, `${line}\n`);
@@ -213,7 +217,7 @@ async function main() {
   const result = await page.evaluate(
     async (cfg) => {
       // A real provider: forward every call to the local proxy, which relays to
-      // the testnet RPC. The harness uses it only for eth_call (the specifier).
+      // the specifier-chain RPC. The harness uses it only for eth_call (the specifier).
       const provider = {
         request: async ({ method, params }) => {
           const r = await fetch(cfg.rpcProxy, {

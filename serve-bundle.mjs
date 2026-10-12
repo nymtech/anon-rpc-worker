@@ -1,8 +1,8 @@
 // Serve the built worker bundle on a fixed local port with permissive CORS, so
 // it can act as a resolver for a local or testnet rehearsal WITHOUT publishing
 // the repo. Point the specifier's resolver at http://127.0.0.1:<port>/<path>;
-// the headless browser in test:sepolia reaches it on the same machine. Leave it
-// running during both the deploy (publish-worker verify) and test:sepolia.
+// the headless browser in test:onchain reaches it on the same machine. Leave it
+// running during both the deploy (publish-worker verify) and test:onchain.
 //
 // Not for production: a 127.0.0.1 resolver only resolves on this machine.
 //
