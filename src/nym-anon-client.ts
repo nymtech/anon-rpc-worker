@@ -182,16 +182,24 @@ export async function runNymWorker(
 
 // AnonRequestInit → the RequestInit handed to mixFetch. Everything in the
 // result must survive structured clone: mix-tunnel ships it over Comlink to
-// its tunnel worker. So headers stay a plain pair array, a streaming body is
-// buffered to a Uint8Array, and `signal` is never included (AbortSignal is
-// not cloneable, so cancellation is handled outside via `abortable`).
+// its tunnel worker. So a streaming body is buffered to a Uint8Array, and
+// `signal` is never included (AbortSignal is not cloneable, so cancellation
+// is handled outside via `abortable`). smolmix reads `headers` only as a
+// plain object of string values, so the pair list becomes one; `Headers`
+// validates it and combines repeated request headers as fetch does.
 export async function toRequestInit(
   init?: AnonRequestInit,
 ): Promise<RequestInit | undefined> {
   if (!init) return undefined;
   const out: RequestInit = {};
   if (init.method) out.method = init.method;
-  if (init.headers) out.headers = init.headers as [string, string][];
+  if (init.headers) {
+    const headers: Record<string, string> = Object.create(null);
+    new Headers(init.headers).forEach((v, k) => {
+      headers[k] = v;
+    });
+    out.headers = headers;
+  }
   if (init.body) out.body = (await readAll(init.body)) as BodyInit;
   if (init.redirect) out.redirect = init.redirect;
   return out;

@@ -114,11 +114,33 @@ test("toRequestInit: buffers a stream body and strips signal", async () => {
     signal: new AbortController().signal,
   });
   assert.equal(out.method, "POST");
-  assert.deepEqual(out.headers, [["content-type", "application/json"]]);
+  assert.deepEqual({ ...out.headers }, { "content-type": "application/json" });
   assert.ok(out.body instanceof Uint8Array);
   assert.equal(new TextDecoder().decode(out.body), "hello world");
   assert.equal(out.redirect, "manual");
   assert.ok(!("signal" in out), "AbortSignal must not reach structured clone");
+});
+
+test("toRequestInit: headers become a plain object, repeated names joined", async () => {
+  const out = await toRequestInit({
+    headers: [
+      ["Content-Type", "application/json"],
+      ["x-a", "1"],
+      ["X-A", "2"],
+      ["__proto__", "kept"],
+    ],
+  });
+  const expected = Object.fromEntries([
+    ["content-type", "application/json"],
+    ["x-a", "1, 2"],
+    ["__proto__", "kept"],
+  ]);
+  assert.deepEqual({ ...out.headers }, expected);
+  assert.deepEqual({ ...structuredClone(out.headers) }, expected);
+});
+
+test("toRequestInit: an invalid header rejects", async () => {
+  await assert.rejects(toRequestInit({ headers: [["x-a", "1\r\nx-b: 2"]] }), TypeError);
 });
 
 // toAnonResponse
