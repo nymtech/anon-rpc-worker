@@ -15,7 +15,13 @@ import type {
 export type TunnelDeps = {
   setupMixTunnel(opts?: Record<string, unknown>): Promise<void>;
   mixFetch(url: string, init?: RequestInit): Promise<Response>;
+  getTunnelState(): Promise<TunnelState>;
 };
+
+// mix-tunnel's TunnelState, as far as this worker reads it.
+type TunnelState =
+  | { state: "connecting" | "ready" | "shutting_down" | "shutdown" }
+  | { state: "failed"; reason: { kind: string } };
 
 // Optional worker configuration, stored by the host (via its own tooling)
 // under this key as UTF-8 JSON. The value is passed to setupMixTunnel as
@@ -172,11 +178,35 @@ export async function runNymWorker(
   ): Promise<AnonFetchResponse> {
     init?.signal?.throwIfAborted();
     await abortable(ensureTunnel(), init?.signal);
-    const resp = await abortable(
-      deps.mixFetch(url, await toRequestInit(init)),
-      init?.signal,
-    );
+    let resp: Response;
+    try {
+      resp = await abortable(
+        deps.mixFetch(url, await toRequestInit(init)),
+        init?.signal,
+      );
+    } catch (e) {
+      void failIfTunnelFailed();
+      throw e;
+    }
     return toAnonResponse(resp);
+  }
+
+  // smolmix keeps one tunnel per WASM instance and cannot set it up again,
+  // so a tunnel in the `failed` state (a task exited, or the exit forwards
+  // no traffic) leaves this worker unable to serve any call. Report it as
+  // permanent (§7) so the host can replace the worker instead of waiting out
+  // a timeout on every call.
+  async function failIfTunnelFailed(): Promise<void> {
+    let tunnel;
+    try {
+      tunnel = await deps.getTunnelState();
+    } catch {
+      return;
+    }
+    if (tunnel.state !== "failed") return;
+    const message = `nym tunnel failed: ${tunnel.reason.kind}`;
+    api.log.error(message);
+    api.signalFailed({ code: "network-error", message });
   }
 }
 
