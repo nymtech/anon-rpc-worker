@@ -330,6 +330,62 @@ test("worker: fresh clientId per setup attempt; pinned clientId respected", asyn
   }
 });
 
+test("worker: a failed tunnel signals failure; other fetch errors do not", async () => {
+  const failed = (kind) => [
+    { state: "failed", reason: { kind } },
+    [{ code: "network-error", message: `nym tunnel failed: ${kind}` }],
+  ];
+  for (const [tunnelState, expected] of [
+    [{ state: "ready" }, []],
+    [new Error("tunnel worker gone"), []],
+    failed("task_exited"),
+    failed("task_panicked"),
+    failed("exit_silent"),
+  ]) {
+    const fake = makeFakeApi();
+    const deps = {
+      setupMixTunnel: async () => {},
+      mixFetch: async () => {
+        throw new Error("operation timed out");
+      },
+      getTunnelState: async () => {
+        if (tunnelState instanceof Error) throw tunnelState;
+        return tunnelState;
+      },
+    };
+    const done = runNymWorker(fake.api, deps);
+    const { call, settled } = makeFetchCall("https://example.com/");
+    fake.push(call);
+    const r = await settled;
+    assert.ok(!r.ok, "the call still rejects with the fetch error");
+    assert.match(r.error.message, /operation timed out/);
+    await tick();
+    assert.deepEqual(fake.failSignals(), expected);
+    fake.failAccept(new Error("shutdown"));
+    await done;
+  }
+});
+
+test("worker: an aborted fetch rejects without waiting on the tunnel state", async () => {
+  const fake = makeFakeApi();
+  const deps = {
+    setupMixTunnel: async () => {},
+    mixFetch: () => new Promise(() => {}),
+    getTunnelState: () => new Promise(() => {}),
+  };
+  const done = runNymWorker(fake.api, deps);
+  const ac = new AbortController();
+  const { call, settled } = makeFetchCall("https://example.com/", { signal: ac.signal });
+  fake.push(call);
+  await tick();
+  ac.abort(new Error("caller gave up"));
+  const r = await settled;
+  assert.ok(!r.ok);
+  assert.match(r.error.message, /caller gave up/);
+  fake.failAccept(new Error("shutdown"));
+  await done;
+});
+
 test("worker: ignores unknown call kinds", async () => {
   const fake = makeFakeApi();
   const deps = {

@@ -8,7 +8,7 @@
 // runs the smolmix WASM mixnet stack and connects to a Nym gateway over
 // WebSocket. See README.md for the platform-support consequences.
 
-import { setupMixTunnel, mixFetch } from "@nymproject/mix-fetch";
+import { setupMixTunnel, mixFetch, getTunnelState } from "@nymproject/mix-fetch";
 import preludeSource from "idb-prelude-source";
 import { patchTunnelWorkerBlobs } from "./tunnel-worker-patch.js";
 import { runNymWorker } from "./nym-anon-client.js";
@@ -23,4 +23,5 @@ patchTunnelWorkerBlobs(preludeSource);
 void runNymWorker(anonRpcWorker, {
   setupMixTunnel: setupMixTunnel as (opts?: Record<string, unknown>) => Promise<void>,
   mixFetch,
+  getTunnelState,
 });
