@@ -1,6 +1,6 @@
 {
   "name": "@nymproject/anon-rpc-worker",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "license": "Apache-2.0",
   "type": "module",
   "packageManager": "pnpm@11.1.2",
@@ -20,7 +20,7 @@
   "homepage": "https://github.com/nymtech/anon-rpc-worker",
   "bugs": { "url": "https://github.com/nymtech/anon-rpc-worker/issues" },
   "dependencies": {
-    "@nymproject/mix-fetch": "3.0.3",
+    "@nymproject/mix-fetch": "3.0.4",
     "fake-indexeddb": "^6.2.5"
   },
   "devDependencies": {

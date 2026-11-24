@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@nymproject/mix-fetch':
-        specifier: 3.0.3
-        version: 3.0.3
+        specifier: 3.0.4
+        version: 3.0.4
       fake-indexeddb:
         specifier: ^6.2.5
         version: 6.2.5
@@ -250,11 +250,11 @@ packages:
     resolution: {integrity: sha512-X5XaVWZIBCT7HHZGm5I7ZQXDwLG+bGXuSrMQAW+7Zvl87h1kmc1ZB1VSRJcpUfoUrGQp4Fkoxm5kZ+Ms+aW+eA==}
     engines: {node: '>= 20.19.0'}
 
-  '@nymproject/mix-fetch@3.0.3':
-    resolution: {integrity: sha512-ANWlGy8gBV6XfLviqx5siNKP6ezZ3Lzy8ZghFlVvv3NOPO5CdLJT3vhv7lGahCadPlTgTR66P/aZyn2W9cH6AA==}
+  '@nymproject/mix-fetch@3.0.4':
+    resolution: {integrity: sha512-Q+hq7ZEmPmyVgEAteRLFFBK+fxKaGLFYH86LxbAyD+oMLmptQufb0JNG7gNmR3H8SiIeir6R2F3cVSnZSnEk2A==}
 
-  '@nymproject/mix-tunnel@0.3.3':
-    resolution: {integrity: sha512-wl1AZyhjKkC4XEqzVIPgXcsH1Ql03ggA2vKjBNYOWpgDhR6xiWgOPqvmNMX3Sz6i08KALBEfEDQSftlb5WVGNg==}
+  '@nymproject/mix-tunnel@0.3.4':
+    resolution: {integrity: sha512-xO3kCelvCb4U6/zqhENmPz2LU3wASK2ybalk1L8iYYor0OXHmV6ZTQyeU6O5o6evmP24UhUYD36ZqT6oMZ7lAA==}
 
   esbuild@0.24.2:
     resolution: {integrity: sha512-+9egpBW8I3CD5XPe0n6BfT5fxLzxrlDzqydF3aviG+9ni1lDC/OvMHcxqEFV0+LANZG5R1bFMWfUrjVsdwxJvA==}
@@ -447,11 +447,11 @@ snapshots:
 
   '@noble/hashes@2.4.0': {}
 
-  '@nymproject/mix-fetch@3.0.3':
+  '@nymproject/mix-fetch@3.0.4':
     dependencies:
-      '@nymproject/mix-tunnel': 0.3.3
+      '@nymproject/mix-tunnel': 0.3.4
 
-  '@nymproject/mix-tunnel@0.3.3': {}
+  '@nymproject/mix-tunnel@0.3.4': {}
 
   esbuild@0.24.2:
     optionalDependencies:
