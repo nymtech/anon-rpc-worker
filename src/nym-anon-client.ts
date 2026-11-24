@@ -115,12 +115,6 @@ export async function runNymWorker(
         if (opts["clientId"] === undefined) {
           opts["clientId"] = `anon-rpc-${randomId()}`;
         }
-        if (opts["primaryDns"] === undefined) {
-          opts["primaryDns"] = "194.72.35.194:53";
-        }
-        if (opts["fallbackDns"] === undefined) {
-          opts["fallbackDns"] = "9.9.9.9:53";
-        }
         await deps.setupMixTunnel(opts);
       })();
       tunnelReady.catch(() => {

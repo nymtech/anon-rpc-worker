@@ -45,7 +45,7 @@ The worker MUST convert `AnonRequestInit` to a `RequestInit`, call `mixFetch(url
 
 ### Requirement: Configuration SHALL be optional with a defined precedence
 
-Config MUST be read once at boot. The host-supplied `anonRpcWorker.config` object (§7.1) is the primary source; a UTF-8 JSON blob at the worker-scoped storage key `nym/setup-opts` (§11) is the fallback. Either MUST be passed to `setupMixTunnel` as `SetupMixTunnelOpts`. Config is optional, because the IPR auto-discovers and DNS has defaults. Recognised fields: `preferredIpr`, `disableCoverTraffic`, `connectTimeoutMs`, `clientId`, `primaryDns`, `fallbackDns`, `debug`.
+Config MUST be read once at boot. The host-supplied `anonRpcWorker.config` object (§7.1) is the primary source; a UTF-8 JSON blob at the worker-scoped storage key `nym/setup-opts` (§11) is the fallback. Either MUST be passed to `setupMixTunnel` as `SetupMixTunnelOpts`. Config is optional, because the IPR auto-discovers and DNS has defaults. Recognised fields: `preferredIpr`, `disableCoverTraffic`, `connectTimeoutMs`, `clientId`, `dnsTimeoutMs`, `dohEndpoints`, `debug`.
 
 #### Scenario: Host config takes precedence over stored config
 - **GIVEN** both an `anonRpcWorker.config` object and a `nym/setup-opts` storage blob exist

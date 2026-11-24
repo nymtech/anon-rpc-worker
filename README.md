@@ -64,7 +64,8 @@ Optional, read once at boot. The harness-supplied `anonRpcWorker.config` object 
 | `disableCoverTraffic` | Turn off Poisson cover traffic |
 | `connectTimeoutMs` | Per-attempt tunnel connect timeout |
 | `clientId` | Pin the mixnet client identity (default: a fresh random id per attempt) |
-| `primaryDns` / `fallbackDns` | DoH resolvers (defaults applied when unset) |
+| `dnsTimeoutMs` | Budget for one DNS-over-HTTPS resolver attempt, including its TCP and TLS handshakes (default: 8000) |
+| `dohEndpoints` | DNS-over-HTTPS resolver URLs with IP-literal hosts (default: Quad9, Cloudflare and Google) |
 | `debug` | Verbose smolmix logging |
 
 ## Layout

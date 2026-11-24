@@ -231,6 +231,7 @@ test("worker: sets up tunnel with stored opts, signals ready, serves fetch", asy
   assert.equal(fake.readySignals(), 1, "signalReady after tunnel setup");
   assert.equal(seen.setupOpts.preferredIpr, "pinned");
   assert.match(seen.setupOpts.clientId, /^anon-rpc-/, "ephemeral clientId injected");
+  assert.ok(!("primaryDns" in seen.setupOpts) && !("fallbackDns" in seen.setupOpts));
 
   const { call, settled } = makeFetchCall("https://example.com/rpc", {
     method: "POST",
